@@ -2069,13 +2069,18 @@ if __name__ == "__main__":  # pragma: nocover
     output_dir = parser.output_dir
     session_fp = next(data_dir.rglob("session.json"))
     description_fp = next(data_dir.rglob("data_description.json"))
-    subject_fp = next(data_dir.rglob("subject.json"))
     with open(session_fp, "r") as j:
         session = json.load(j)
     with open(description_fp, "r") as j:
         data_description = json.load(j)
-    with open(subject_fp, "r") as j:
-        subject = json.load(j)
+    # subject.json isn't always piped into motion-correction's /data by the pipeline
+    # (depends on upstream channel wiring); fall back to session.json's subject_id.
+    try:
+        subject_fp = next(data_dir.rglob("subject.json"))
+        with open(subject_fp, "r") as j:
+            subject = json.load(j)
+    except StopIteration:
+        subject = {"subject_id": session.get("subject_id", "")}
     subject_id = subject.get("subject_id", "")
     name = data_description.get("name", "")
     setup_logging(

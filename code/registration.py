@@ -1962,7 +1962,7 @@ def generate_single_plane_reference(fp: Path, session) -> Path:
         bci_epochs = [
             i
             for i in session["stimulus_epochs"]
-            if i["stimulus_name"] == "single neuron BCI conditioning"
+            if i.get("output_parameters", {}).get("tiff_stem") == "bci"
         ]
         bci_epoch_loc = [i["output_parameters"]["tiff_stem"] for i in bci_epochs][0]
         frame_length = tiff_stems[bci_epoch_loc][1] - tiff_stems[bci_epoch_loc][0]

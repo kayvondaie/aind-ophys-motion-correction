@@ -17,7 +17,7 @@ WORKDIR /
 RUN pip3 install -U --no-cache-dir \
     aind-ophys-utils \
     sbxreader \
-    suite2p \
+    suite2p==0.14.6 \
     aind-data-schema==1.1.0 \
     pydantic==2.8.1 \
     aind-qcportal-schema \

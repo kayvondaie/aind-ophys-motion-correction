@@ -2098,7 +2098,12 @@ if __name__ == "__main__":  # pragma: nocover
             input_file = next(data_dir.rglob("pophys"))
         output_dir = make_output_directory(output_dir, unique_id)
     elif parser.data_type.lower() == "h5":
-        unique_id = "MOp2_3_0"  # TODO: remove when upgrade to data-schema v2
+        # unique_id was hardcoded to "MOp2_3_0" (TODO comment confirmed it was placeholder
+        # tech debt); use the actual h5 file's stem so the downstream filter matches.
+        try:
+            unique_id = next(data_dir.rglob("*.h5")).stem
+        except StopIteration:
+            unique_id = "MOp2_3_0"  # fallback to legacy placeholder if no h5 present
         if "Bergamo" in session.get("rig_id", ""):
             h5_file, output_dir, reference_image_fp = singleplane_motion_correction(
                 data_dir, output_dir, session, unique_id, debug=parser.debug

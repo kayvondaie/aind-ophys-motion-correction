@@ -1957,14 +1957,34 @@ def generate_single_plane_reference(fp: Path, session) -> Path:
         path to reference image
     """
     with h5py.File(fp, "r") as f:
-        # take the first bci epoch to save out reference image TODO
+        # Pick the BCI epoch with the most frames. Sessions can have multiple
+        # BCI variants (bci, bci2, bci3, bci4) and the literal "bci" epoch is
+        # sometimes empty/stub — using it as the reference source would yield
+        # a 0-frame virtual layout and crash suite2p (ValueError: cannot
+        # reshape array of size 0).
         tiff_stems = json.loads(f["epoch_locations"][:][0])
         bci_epochs = [
             i
             for i in session["stimulus_epochs"]
-            if i.get("output_parameters", {}).get("tiff_stem") == "bci"
+            if i.get("output_parameters", {}).get("tiff_stem", "").startswith("bci")
         ]
-        bci_epoch_loc = [i["output_parameters"]["tiff_stem"] for i in bci_epochs][0]
+        if not bci_epochs:
+            raise RuntimeError(
+                "No BCI-prefixed stimulus epochs found in session metadata."
+            )
+
+        def _epoch_frame_count(ep):
+            stem = ep["output_parameters"]["tiff_stem"]
+            loc = tiff_stems.get(stem)
+            return (loc[1] - loc[0]) if loc else 0
+
+        bci_epochs.sort(key=_epoch_frame_count, reverse=True)
+        bci_epoch_loc = bci_epochs[0]["output_parameters"]["tiff_stem"]
+        if _epoch_frame_count(bci_epochs[0]) == 0:
+            raise RuntimeError(
+                f"All BCI epochs are empty in this session: "
+                f"{[e['output_parameters']['tiff_stem'] for e in bci_epochs]}"
+            )
         frame_length = tiff_stems[bci_epoch_loc][1] - tiff_stems[bci_epoch_loc][0]
         vsource = h5py.VirtualSource(f["data"])
         layout = h5py.VirtualLayout(
